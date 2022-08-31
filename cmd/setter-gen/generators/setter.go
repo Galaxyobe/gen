@@ -26,8 +26,9 @@ import (
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-
 	"k8s.io/klog/v2"
+
+	"github.com/galaxyobe/gen/pkg/util"
 )
 
 // NameSystems returns the name system used by the generators in this package.
@@ -74,72 +75,49 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			// If the input had no Go files, for example.
 			continue
 		}
-
-		ptag := extractEnabledTag(pkg.Comments)
-		ptagValue := ""
-		if ptag != nil {
-			ptagValue = ptag.value
-			if ptagValue != tagValuePackage {
-				klog.Fatalf("Package %v: unsupported %s value: %q", i, tagName, ptagValue)
-			}
-		} else {
-			klog.V(5).Infof("  no tag")
+		pkgEnabled, genTypes := NewGenTypes(pkg)
+		if !pkgEnabled {
+			continue
 		}
-
-		// If the pkg-scoped tag says to generate, we can skip scanning types.
-		pkgNeedsGeneration := (ptagValue == tagValuePackage)
-		if !pkgNeedsGeneration {
-			// If the pkg-scoped tag did not exist, scan all types for one that
-			// explicitly wants generation.
-			for _, t := range pkg.Types {
-				klog.V(5).Infof("  considering type %q", t.Name.String())
-				ttag := extractEnabledTypeTag(t)
-				if ttag != nil && ttag.value == "true" {
-					klog.V(5).Infof("    tag=true")
-					pkgNeedsGeneration = true
-					break
+		klog.V(3).Infof("Package %q needs generation", pkg.Path)
+		path := pkg.Path
+		if strings.HasPrefix(pkg.SourcePath, arguments.OutputBase) {
+			expandedPath := strings.TrimPrefix(pkg.SourcePath, arguments.OutputBase)
+			if strings.Contains(expandedPath, "/vendor/") {
+				path = expandedPath
+			}
+		}
+		if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
+			if customArgs.TrimPackagePath != "" {
+				path = strings.ReplaceAll(path, customArgs.TrimPackagePath, "")
+				separator := string(filepath.Separator)
+				if path != "" && strings.HasPrefix(path, separator) {
+					path = path[1:]
 				}
 			}
 		}
 
-		if pkgNeedsGeneration {
-			klog.V(3).Infof("Package %q needs generation", i)
-			path := pkg.Path
-			// if the source path is within a /vendor/ directory (for example,
-			// k8s.io/kubernetes/vendor/k8s.io/apimachinery/pkg/apis/meta/v1), allow
-			// generation to output to the proper relative path (under vendor).
-			// Otherwise, the generator will create the file in the wrong location
-			// in the output directory.
-			// TODO: build a more fundamental concept in gengo for dealing with modifications
-			// to vendored packages.
-			if strings.HasPrefix(pkg.SourcePath, arguments.OutputBase) {
-				expandedPath := strings.TrimPrefix(pkg.SourcePath, arguments.OutputBase)
-				if strings.Contains(expandedPath, "/vendor/") {
-					path = expandedPath
-				}
-			}
-			if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
-				if customArgs.TrimPackagePath != "" {
-					path = strings.ReplaceAll(path, customArgs.TrimPackagePath, "")
-					separator := string(filepath.Separator)
-					if path != "" && strings.HasPrefix(path, separator) {
-						path = path[1:]
+		files, err := util.AstParseDir(pkg.SourcePath)
+		if err != nil {
+			klog.Fatalf("ast parse %s error: %s", pkg.SourcePath, err)
+		}
+
+		util.FindInt8OrUint8Type(files)
+
+		packages = append(packages,
+			&generator.DefaultPackage{
+				PackageName: pkg.Name,
+				PackagePath: path,
+				HeaderText:  header,
+				GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+					return []generator.Generator{
+						NewGenSetter(arguments.OutputFileBaseName, pkg.Path, boundingDirs, genTypes),
 					}
-				}
-			}
-			packages = append(packages,
-				&generator.DefaultPackage{
-					PackageName: pkg.Name,
-					PackagePath: path,
-					HeaderText:  header,
-					GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-						return []generator.Generator{}
-					},
-					FilterFunc: func(c *generator.Context, t *types.Type) bool {
-						return t.Name.Package == pkg.Path
-					},
-				})
-		}
+				},
+				FilterFunc: func(c *generator.Context, t *types.Type) bool {
+					return t.Name.Package == pkg.Path
+				},
+			})
 	}
 	return packages
 }

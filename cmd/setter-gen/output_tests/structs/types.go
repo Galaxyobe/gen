@@ -14,6 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +gen:setter=package
-
 package structs
+
+import (
+	"github.com/galaxyobe/gen/cmd/setter-gen/output_tests/builtins"
+)
+
+type Alias builtins.Builtins
+
+type Structs struct {
+	b      byte
+	String string
+	builtins.Builtins
+	Builtins1 builtins.Builtins
+	Builtins2 *builtins.Builtins
+}

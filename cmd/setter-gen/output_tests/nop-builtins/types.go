@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +gen:setter=package
+package nop_builtins
 
-package structs
+type Builtins struct{}

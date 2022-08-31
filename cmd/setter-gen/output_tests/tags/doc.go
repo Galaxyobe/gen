@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Gen Authors.
+Copyright 2022 The Gen Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,34 +15,3 @@ limitations under the License.
 */
 
 package tags
-
-// +gen:setter=false
-type Builtins struct {
-	b       byte
-	i       int
-	u       uint
-	Byte    byte
-	Int8    int8
-	Int16   int16
-	Int32   int32
-	Int64   int64
-	Uint8   uint8
-	Uint16  uint16
-	Uint32  uint32
-	Uint64  uint64
-	Float32 float32
-	Float64 float64
-	String  string
-	Bytes   []byte
-}
-
-// +gen:setter=true
-type Structs struct {
-	b      byte
-	String string
-	Builtins
-	Builtins1 Builtins
-	Builtins2 *Builtins
-	// +setter=false
-	Builtins3 *Builtins
-}
