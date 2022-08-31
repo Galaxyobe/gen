@@ -16,7 +16,24 @@ limitations under the License.
 
 package builtins
 
+type (
+	Uint8   uint8
+	Uint    uint
+	Int8    int8
+	Int     int
+	StrFunc func(string) error
+	I8Func  func(int8) error
+	U8Func  func(uint8) error
+)
+
 type Builtins struct {
+	U8       Uint8
+	I8       Int8
+	U        Uint
+	I        Int
+	StrFunc  StrFunc
+	I8Func   I8Func
+	U8Func   U8Func
 	Int8     int8
 	Uint8    uint8
 	a        any

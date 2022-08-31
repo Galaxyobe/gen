@@ -102,7 +102,8 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			klog.Fatalf("ast parse %s error: %s", pkg.SourcePath, err)
 		}
 
-		util.FindInt8OrUint8Type(files)
+		int8s := util.FindInt8Type(files)
+		uint8s := util.FindUint8Type(files)
 
 		packages = append(packages,
 			&generator.DefaultPackage{
@@ -111,7 +112,14 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 				HeaderText:  header,
 				GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 					return []generator.Generator{
-						NewGenSetter(arguments.OutputFileBaseName, pkg.Path, boundingDirs, genTypes),
+						NewGenSetter(
+							arguments.OutputFileBaseName,
+							pkg.Path,
+							boundingDirs,
+							genTypes,
+							int8s,
+							uint8s,
+						),
 					}
 				},
 				FilterFunc: func(c *generator.Context, t *types.Type) bool {

@@ -64,9 +64,11 @@ type genSetter struct {
 	boundingDirs  []string
 	imports       namer.ImportTracker
 	types         GenTypes
+	int8s         map[string][]string
+	uint8s        map[string][]string
 }
 
-func NewGenSetter(sanitizedName, targetPackage string, boundingDirs []string, types []*GenType) generator.Generator {
+func NewGenSetter(sanitizedName, targetPackage string, boundingDirs []string, types []*GenType, int8s, uint8s map[string][]string) generator.Generator {
 	return &genSetter{
 		DefaultGen: generator.DefaultGen{
 			OptionalName: sanitizedName,
@@ -75,6 +77,8 @@ func NewGenSetter(sanitizedName, targetPackage string, boundingDirs []string, ty
 		boundingDirs:  boundingDirs,
 		imports:       generator.NewImportTracker(),
 		types:         types,
+		int8s:         int8s,
+		uint8s:        uint8s,
 	}
 }
 
@@ -105,7 +109,7 @@ func (g *genSetter) GenerateType(c *generator.Context, t *types.Type, w io.Write
 	klog.V(5).Infof("Generating setter function for type %v", t)
 
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
-	genSetFunc(sw, t)
+	g.genSetFunc(sw, t)
 	sw.Do("\n", nil)
 
 	return sw.Error()
@@ -131,7 +135,33 @@ func (g *genSetter) Imports(c *generator.Context) (imports []string) {
 	return importLines
 }
 
-func genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
+func (g *genSetter) convertFieldToInt8(typeName, fieldName string) bool {
+	list := g.int8s[typeName]
+	if len(list) == 0 {
+		return false
+	}
+	for _, item := range list {
+		if item == fieldName {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *genSetter) convertFieldToUint8(typeName, fieldName string) bool {
+	list := g.uint8s[typeName]
+	if len(list) == 0 {
+		return false
+	}
+	for _, item := range list {
+		if item == fieldName {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	for _, m := range t.Members {
 		method := "Set" + m.Name
@@ -145,13 +175,15 @@ func genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 			"method":   method,
 			"byte":     m.Type.Name.Name == "byte",
 		}
-		sw.Do(setFieldFunc, args)
+		if g.convertFieldToInt8(t.Name.Name, m.Name) {
+			sw.Do("func ($.receiver$ *$.type|public$) $.method$(val int8) *$.type|public$ {\n", args)
+		} else if g.convertFieldToUint8(t.Name.Name, m.Name) {
+			sw.Do("func ($.receiver$ *$.type|public$) $.method$(val uint8) *$.type|public$ {\n", args)
+		} else {
+			sw.Do("func ($.receiver$ *$.type|public$) $.method$(val $.field.Type|raw$) *$.type|public$ {\n", args)
+		}
+		sw.Do("$.receiver$.$.field.Name$ = val\n", args)
+		sw.Do("return $.receiver$", args)
+		sw.Do("}\n\n", nil)
 	}
 }
-
-const setFieldFunc = `
-func ($.receiver$ *$.type|public$) $.method$(val $.field.Type|raw$) *$.type|public$ {
-	$.receiver$.$.field.Name$ = val
-	return $.receiver$
-}
-`
