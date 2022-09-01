@@ -16,44 +16,49 @@ limitations under the License.
 
 package tags
 
-//
-// // +gen:setter=true
-// type Builtins builtins.Builtins
-//
-// // +gen:setter=false
-// type Builtins2 builtins.Builtins
-//
-// // +gen:setter=true
-// type Structs struct {
-// 	b      byte
-// 	String string
-// 	Builtins
-// 	Builtins1 Builtins
-// 	Builtins2 *Builtins
-// 	// +setter=false
-// 	Builtins3 *Builtins
-// }
-//
-// // +gen:setter:fields=b,s,String,Builtins,Builtins2
-// type Structs2 struct {
-// 	b byte
-// 	// u uint8
-// 	// +setter=true
-// 	i int8
-// 	// +setter=false
-// 	s string
-// 	String string
-// 	Builtins
-// 	Builtins1 Builtins
-// 	Builtins2 *Builtins
-// 	// +setter=false
-// 	Builtins3 *Builtins
-// }
+import (
+	"github.com/galaxyobe/gen/cmd/setter-gen/output_tests/builtins"
+)
 
 // +gen:setter=true
+type Builtins builtins.Builtins
+
+// +gen:setter=false
+type Builtins2 builtins.Builtins
+
+// +gen:setter=true
+type Structs struct {
+	b      byte
+	String string
+	Builtins
+	Builtins1 Builtins
+	Builtins2 *Builtins
+	// +setter=false
+	Builtins3 *Builtins
+}
+
+// +gen:setter:fields=b,s,String,Builtins,Builtins2
 type Structs2 struct {
+	b byte
+	u uint8
+	// +setter=true
+	i int8 // will be ignored
+	// +setter=false
+	s      string // will be ignored
+	String string
+	Builtins
+	Builtins1 Builtins
+	Builtins2 *Builtins
+	// +setter=false
+	Builtins3 *Builtins
+}
+
+// +gen:setter=true
+type Structs3 struct {
 	// +setter:method=Set8Bits
+	// +setter=false
 	u8 uint8
+	// +setter=true
 	// +setter:method=Set8Bits
 	i8 int8
 	s  string

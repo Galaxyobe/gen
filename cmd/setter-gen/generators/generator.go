@@ -61,19 +61,21 @@ func (list GenTypes) allowed(t *types.Type) bool {
 	return false
 }
 
+// allowedField allowed type's field to generate Setter func.
+// will be ignored field enabled status when it's in +gen:setter:fields allowed fields.
 func (list GenTypes) allowedField(t *types.Type, m int) bool {
 	for _, item := range list {
 		if item.Name.Name == t.Name.Name && item.Name.Package == t.Name.Package {
 			if len(t.Members) == 0 {
 				return true
 			}
-			if len(item.AllowFields) == 0 {
-				return true
-			}
 			field := t.Members[m]
 			set, enable := util.GetTagBoolStatus(tagFieldName, field.CommentLines)
-			if set && !enable {
+			if set && !enable && len(item.AllowFields) == 0 {
 				return false
+			}
+			if len(item.AllowFields) == 0 {
+				return true
 			}
 			return util.Exist(item.AllowFields, field.Name)
 		}
@@ -81,25 +83,25 @@ func (list GenTypes) allowedField(t *types.Type, m int) bool {
 	return false
 }
 
-type MethodSet map[string][]string // key: method name value: fields
+type MethodSet map[string][]types.Member // key: method name value: types.Member
 
 func NewMethodSet() MethodSet {
 	return make(MethodSet)
 }
 
-func (m MethodSet) AddMethod(method string, field ...string) {
+func (m MethodSet) AddMethod(method string, member types.Member) {
 	list, ok := m[method]
 	if !ok {
-		m[method] = field
+		m[method] = []types.Member{member}
 		return
 	}
-	list = append(list, field...)
+	list = append(list, member)
 	m[method] = list
 }
 
-func (m MethodSet) AddMethods(methods []string, field ...string) {
+func (m MethodSet) AddMethods(methods []string, member types.Member) {
 	for _, method := range methods {
-		m.AddMethod(method, field...)
+		m.AddMethod(method, member)
 	}
 }
 
@@ -152,7 +154,8 @@ func (g *genSetter) Init(c *generator.Context, w io.Writer) error {
 
 func (g *genSetter) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	klog.V(5).Infof("Generating setter function for type %v", t)
-	sw := generator.NewSnippetWriter(w, c, "$", "$")
+	g.updateTypeMembers(t)
+	sw := generator.NewSnippetWriter(w, c, "", "")
 	g.genSetFunc(sw, t)
 	sw.Do("\n", nil)
 
@@ -179,7 +182,7 @@ func (g *genSetter) Imports(c *generator.Context) (imports []string) {
 	return importLines
 }
 
-func (g *genSetter) updateType(t *types.Type) {
+func (g *genSetter) updateTypeMembers(t *types.Type) {
 	uint8Fields := g.packageTypes.GetUint8Fields(t.Name.Package, t.Name.Name)
 	int8Fields := g.packageTypes.GetInt8Fields(t.Name.Package, t.Name.Name)
 
@@ -195,7 +198,6 @@ func (g *genSetter) updateType(t *types.Type) {
 func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
-	g.updateType(t)
 	var methodSet = NewMethodSet()
 	var genMethodSet = make(map[string]struct{})
 	for idx, m := range t.Members {
@@ -203,35 +205,45 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 			continue
 		}
 		methods := util.GetTagValues(tagMethodName, m.CommentLines)
-		methodSet.AddMethods(methods, m.Name)
+		methodSet.AddMethods(methods, t.Members[idx])
 		if !g.types.allowedField(t, idx) {
 			continue
 		}
 		method := "Set" + m.Name
-		genMethodSet[method] = struct{}{}
 		if _, ok := t.Methods[method]; ok {
 			continue
 		}
+		genMethodSet[method] = struct{}{}
 		args := generator.Args{
 			"type":     t,
 			"field":    m,
 			"receiver": receiver,
 			"method":   method,
 		}
-		sw.Do("func ($.receiver$ *$.type|public$) $.method$(val $.field.Type|raw$) *$.type|public$ {\n", args)
-		sw.Do("$.receiver$.$.field.Name$ = val\n", args)
-		sw.Do("return $.receiver$", args)
+		sw.Do("func ({{.receiver}} *{{.type|public}}) {{.method}}(val {{.field.Type|raw}}) *{{.type|public}} {\n", args)
+		sw.Do("{{.receiver}}.{{.field.Name}} = val\n", args)
+		sw.Do("return {{.receiver}}", args)
 		sw.Do("}\n\n", nil)
 	}
-	for method, fields := range methodSet {
+	for name := range t.Methods {
+		genMethodSet[name] = struct{}{}
+	}
+	for method, members := range methodSet {
 		if !strings.HasPrefix(method, "Set") {
 			method = "Set" + method
 		}
 		if _, ok := genMethodSet[method]; ok {
 			klog.Fatalf("exist method: %s when generate aggregate method", method)
 		}
-		for _, field := range fields {
-			_ = field
+		args := generator.Args{
+			"type":     t,
+			"receiver": receiver,
+			"method":   method,
+			"fields":   members,
 		}
+		sw.Do("func ({{.receiver}} *{{.type|public}}) {{.method}}({{ range $i, $field := .fields }} in{{$i}} {{$field.Type|raw}}, {{end}}) *{{.type|public}} {\n", args)
+		sw.Do("{{ range $i, $field := .fields }} {{$.receiver}}.{{$field.Name}} = in{{$i}} \n{{ end }}", args)
+		sw.Do("return {{.receiver}}", args)
+		sw.Do("}\n\n", nil)
 	}
 }

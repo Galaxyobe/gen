@@ -49,5 +49,6 @@ type Structs struct {
 	Builtins2 *builtins.Builtins
 	User
 	User2 User
+	User3 *User
 	Age   Age
 }
