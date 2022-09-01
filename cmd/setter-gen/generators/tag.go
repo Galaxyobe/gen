@@ -1,6 +1,8 @@
 package generators
 
 const (
-	tagName             = "gen:setter"
-	tagSelectFieldsName = tagName + ":fields"
+	tagPackageName      = "gen:setter"
+	tagSelectFieldsName = tagPackageName + ":fields"
+	tagFieldName        = "setter"
+	tagMethodName       = tagFieldName + ":method"
 )

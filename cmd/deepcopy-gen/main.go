@@ -82,7 +82,7 @@ func main() {
 	arguments.GoHeaderFilePath = util.BoilerplatePath()
 	arguments.OutputFileBaseName = "deepcopy_generated"
 
-	// Custom args.
+	// Custom custom_args.
 	customArgs := &generators.CustomArgs{}
 	customArgs.AddFlags(pflag.CommandLine)
 

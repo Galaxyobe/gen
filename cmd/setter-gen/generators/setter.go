@@ -28,7 +28,7 @@ import (
 	"k8s.io/gengo/types"
 	"k8s.io/klog/v2"
 
-	"github.com/galaxyobe/gen/pkg/util"
+	"github.com/galaxyobe/gen/pkg/custom_args"
 )
 
 // NameSystems returns the name system used by the generators in this package.
@@ -56,16 +56,21 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	packages := generator.Packages{}
 	header := append([]byte(fmt.Sprintf("//go:build !%s\n// +build !%s\n\n", arguments.GeneratedBuildTag, arguments.GeneratedBuildTag)), boilerplate...)
 
+	customArgs := custom_args.GetCustomArgs(arguments)
+	if customArgs.BoundingDirs == nil {
+		customArgs.BoundingDirs = context.Inputs
+	}
+
 	var boundingDirs []string
-	if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
-		if customArgs.BoundingDirs == nil {
-			customArgs.BoundingDirs = context.Inputs
-		}
-		for i := range customArgs.BoundingDirs {
-			// Strip any trailing slashes - they are not exactly "correct" but
-			// this is friendlier.
-			boundingDirs = append(boundingDirs, strings.TrimRight(customArgs.BoundingDirs[i], "/"))
-		}
+	for i := range customArgs.BoundingDirs {
+		// Strip any trailing slashes - they are not exactly "correct" but
+		// this is friendlier.
+		boundingDirs = append(boundingDirs, strings.TrimRight(customArgs.BoundingDirs[i], "/"))
+	}
+
+	build, err := customArgs.NewBuilder()
+	if err != nil {
+		klog.Fatalf("Failed making a parser: %v", err)
 	}
 
 	for i := range inputs {
@@ -87,23 +92,13 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 				path = expandedPath
 			}
 		}
-		if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
-			if customArgs.TrimPackagePath != "" {
-				path = strings.ReplaceAll(path, customArgs.TrimPackagePath, "")
-				separator := string(filepath.Separator)
-				if path != "" && strings.HasPrefix(path, separator) {
-					path = path[1:]
-				}
+		if customArgs.TrimPackagePath != "" {
+			path = strings.ReplaceAll(path, customArgs.TrimPackagePath, "")
+			separator := string(filepath.Separator)
+			if path != "" && strings.HasPrefix(path, separator) {
+				path = path[1:]
 			}
 		}
-
-		files, err := util.AstParseDir(pkg.SourcePath)
-		if err != nil {
-			klog.Fatalf("ast parse %s error: %s", pkg.SourcePath, err)
-		}
-
-		int8s := util.FindInt8Type(files)
-		uint8s := util.FindUint8Type(files)
 
 		packages = append(packages,
 			&generator.DefaultPackage{
@@ -113,12 +108,12 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 				GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 					return []generator.Generator{
 						NewGenSetter(
+							build,
 							arguments.OutputFileBaseName,
 							pkg.Path,
 							boundingDirs,
 							genTypes,
-							int8s,
-							uint8s,
+							pkg.SourcePath,
 						),
 					}
 				},

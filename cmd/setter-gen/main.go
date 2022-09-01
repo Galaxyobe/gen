@@ -44,6 +44,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/galaxyobe/gen/cmd/setter-gen/generators"
+	custom_args "github.com/galaxyobe/gen/pkg/custom_args"
 	"github.com/galaxyobe/gen/pkg/util"
 )
 
@@ -56,11 +57,9 @@ func main() {
 	arguments.GoHeaderFilePath = util.BoilerplatePath()
 	arguments.OutputFileBaseName = "setter_generated"
 
-	// Custom args.
-	customArgs := &generators.CustomArgs{}
+	// Custom custom_args.
+	customArgs := custom_args.NewCustomArgs(arguments)
 	customArgs.AddFlags(pflag.CommandLine)
-
-	arguments.CustomArgs = customArgs
 
 	// Validate checks the given arguments.
 	if len(arguments.OutputFileBaseName) == 0 {

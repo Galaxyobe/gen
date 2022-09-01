@@ -1,6 +1,8 @@
 package util
 
 import (
+	"strings"
+
 	"k8s.io/gengo/types"
 )
 
@@ -17,4 +19,11 @@ func IsReference(t *types.Type) bool {
 		return true
 	}
 	return t.Kind == types.Alias && IsReference(UnderlyingType(t))
+}
+
+func IsLower(s string) bool {
+	if s == "" {
+		return false
+	}
+	return strings.ToLower(s[:1]) == s[:1]
 }

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -64,6 +65,8 @@ func getSpecKindFieldsInTypeSpec(typeSpec *ast.TypeSpec, kind string) (name stri
 		fields = append(fields, getSpecKindFieldsInStructType(t, kind)...)
 	case *ast.Ident:
 		fields = append(fields, getSpecKindFieldsInIdent(t, kind)...)
+	default:
+		return
 	}
 	return
 }
@@ -117,4 +120,87 @@ func FindUint8Type(files []*ast.File) map[string][]string {
 
 func FindInt8Type(files []*ast.File) map[string][]string {
 	return FindStructSpecKindFields(files, "int8")
+}
+
+func getAstObjectName(o any) string {
+	switch v := o.(type) {
+	case *ast.Ident:
+		return v.Name
+	default:
+		return ""
+	}
+}
+
+func getFuncType(funcType *ast.FuncType) string {
+	var buf bytes.Buffer
+	buf.WriteString("func(")
+	for idx, param := range funcType.Params.List {
+		buf.WriteString(getAstObjectName(param.Type))
+		if idx < len(funcType.Params.List)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteByte(')')
+	if len(funcType.Results.List) > 1 {
+		buf.WriteByte('(')
+	}
+	for idx, param := range funcType.Results.List {
+		buf.WriteString(getAstObjectName(param.Type))
+		if idx < len(funcType.Params.List)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	if len(funcType.Results.List) > 1 {
+		buf.WriteByte(')')
+	}
+	return buf.String()
+}
+
+func getPackageTypeInTypeSpec(typeSpec *ast.TypeSpec) (type_ string, name string) {
+	name = typeSpec.Name.Name
+	switch t := typeSpec.Type.(type) {
+	case *ast.SelectorExpr:
+		type_ = getAstObjectName(t.X) + "." + getAstObjectName(t.Sel)
+	case *ast.Ident:
+		type_ = t.Name
+	case *ast.FuncType:
+		// type_ = getFuncType(t)
+		type_ = "func"
+	case *ast.StructType:
+		type_ = "struct"
+	case *ast.StarExpr:
+		type_ = getAstObjectName(t.X)
+	default:
+		return
+	}
+	return
+}
+
+func getPackageTypesInGenDecl(genDecl *ast.GenDecl) map[string]string {
+	var m = make(map[string]string)
+	for _, spec := range genDecl.Specs {
+		switch s := spec.(type) {
+		case *ast.TypeSpec:
+			type_, name := getPackageTypeInTypeSpec(s)
+			m[name] = type_
+		}
+	}
+	return m
+}
+
+func FindTypeNames(files []*ast.File) (m map[string]string) {
+	m = make(map[string]string)
+	for _, file := range files {
+		ast.Inspect(file, func(node ast.Node) bool {
+			switch n := node.(type) {
+			case *ast.GenDecl:
+				result := getPackageTypesInGenDecl(n)
+				for k, v := range result {
+					m[k] = v
+				}
+			}
+			return true
+		})
+	}
+	return
 }
