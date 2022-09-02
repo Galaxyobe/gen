@@ -71,3 +71,20 @@ type Alias Builtins
 type Alias2 *Builtins
 type Alias3 = Builtins
 type AliasString string
+type Slice struct {
+	i8S        []int8
+	I8S        []*int8
+	I8pS       *[]int8
+	u8S        []uint8
+	U8S        []*uint8
+	U8pS       *[]uint8
+	sS         []string
+	SS         []*string
+	SpS        *[]string
+	bS         []byte
+	BS         []*byte
+	BpS        *[]byte
+	builtinsS  []Builtins
+	BuiltinsS  []*Builtins
+	BuiltinsPs *[]Builtins
+}

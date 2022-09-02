@@ -2,6 +2,10 @@ package parser
 
 import (
 	"go/ast"
+
+	"k8s.io/gengo/types"
+
+	tptypes "github.com/galaxyobe/gen/third_party/gengo/types"
 )
 
 func (b *Builder) GetAllParsedFiles() (list []*ast.File) {
@@ -32,4 +36,13 @@ func (b *Builder) GetParsedFiles() map[string][]ParsedFile {
 		m[string(pkg)] = list
 	}
 	return m
+}
+
+func (b *Builder) ReplaceUniverse(u types.Universe) error {
+	universe, err := b.FindTypes()
+	if err != nil {
+		return err
+	}
+	tptypes.ReplaceUniverse(u, universe)
+	return nil
 }

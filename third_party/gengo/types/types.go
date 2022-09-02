@@ -13,9 +13,14 @@ var (
 		Name: types.Name{Name: "int8"},
 		Kind: types.Builtin,
 	}
-)
 
-func ReplacePackageTypes(m map[string]*types.Type) {
-	m["uint8"] = Uint8
-	m["int8"] = Int8
-}
+	Builtins = &types.Package{
+		Types: map[string]*types.Type{
+			"int8":  Int8,
+			"uint8": Uint8,
+		},
+		Imports: map[string]*types.Package{},
+		Path:    "",
+		Name:    "",
+	}
+)

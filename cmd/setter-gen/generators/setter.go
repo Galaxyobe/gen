@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/galaxyobe/gen/pkg/custom_args"
+	"github.com/galaxyobe/gen/pkg/util"
 )
 
 // NameSystems returns the name system used by the generators in this package.
@@ -68,10 +69,18 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		boundingDirs = append(boundingDirs, strings.TrimRight(customArgs.BoundingDirs[i], "/"))
 	}
 
+	// new parse build to replace context universe for basic int8/uint8 types
 	build, err := customArgs.NewBuilder()
 	if err != nil {
 		klog.Fatalf("Failed making a parser: %v", err)
 	}
+	// replace universe
+	err = build.ReplaceUniverse(context.Universe)
+	if err != nil {
+		klog.Fatalf("Find types error: %v", err)
+	}
+	// reorder
+	util.ReContextOrder(context, DefaultNameSystem())
 
 	for i := range inputs {
 		klog.V(5).Infof("Considering pkg %q", i)

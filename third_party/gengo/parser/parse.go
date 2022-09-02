@@ -35,6 +35,8 @@ import (
 
 	"k8s.io/gengo/types"
 	"k8s.io/klog/v2"
+
+	tptypes "github.com/galaxyobe/gen/third_party/gengo/types"
 )
 
 // This clarifies when a pkg path has been canonicalized.
@@ -786,6 +788,8 @@ func (b *Builder) walkType(u types.Universe, useName *types.Name, in tc.Type) *t
 			Package: "",
 			Name:    t.Name(),
 		})
+		// modify basic types
+		out = tptypes.ModifyType(u, t.Name(), out)
 		if out.Kind != types.Unknown {
 			return out
 		}

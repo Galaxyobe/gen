@@ -9,7 +9,6 @@ import (
 	"k8s.io/gengo/types"
 	"k8s.io/klog/v2"
 
-	pkgtypes "github.com/galaxyobe/gen/pkg/types"
 	"github.com/galaxyobe/gen/pkg/util"
 
 	"github.com/galaxyobe/gen/third_party/gengo/parser"
@@ -112,7 +111,7 @@ type genSetter struct {
 	boundingDirs  []string
 	imports       namer.ImportTracker
 	types         GenTypes
-	packageTypes  pkgtypes.PackageTypes
+	packageTypes  util.PackageTypes
 }
 
 func NewGenSetter(build *parser.Builder, sanitizedName, targetPackage string, boundingDirs []string, types []*GenType, sourcePath string) generator.Generator {
@@ -125,7 +124,7 @@ func NewGenSetter(build *parser.Builder, sanitizedName, targetPackage string, bo
 		boundingDirs:  boundingDirs,
 		imports:       generator.NewImportTracker(),
 		types:         types,
-		packageTypes:  pkgtypes.NewPackageTypes(build),
+		packageTypes:  util.NewPackageTypes(build),
 	}
 }
 
@@ -154,7 +153,7 @@ func (g *genSetter) Init(c *generator.Context, w io.Writer) error {
 
 func (g *genSetter) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	klog.V(5).Infof("Generating setter function for type %v", t)
-	g.updateTypeMembers(t)
+
 	sw := generator.NewSnippetWriter(w, c, "", "")
 	g.genSetFunc(sw, t)
 	sw.Do("\n", nil)
@@ -182,26 +181,13 @@ func (g *genSetter) Imports(c *generator.Context) (imports []string) {
 	return importLines
 }
 
-func (g *genSetter) updateTypeMembers(t *types.Type) {
-	uint8Fields := g.packageTypes.GetUint8Fields(t.Name.Package, t.Name.Name)
-	int8Fields := g.packageTypes.GetInt8Fields(t.Name.Package, t.Name.Name)
-
-	for i, m := range t.Members {
-		if util.Exist(uint8Fields, m.Name) {
-			t.Members[i].Type = pkgtypes.Uint8
-		} else if util.Exist(int8Fields, m.Name) {
-			t.Members[i].Type = pkgtypes.Int8
-		}
-	}
-}
-
 func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
 	var methodSet = NewMethodSet()
 	var genMethodSet = make(map[string]struct{})
 	for idx, m := range t.Members {
-		if isExternalType && util.IsLower(m.Name) {
+		if util.IsLower(m.Name) && isExternalType {
 			continue
 		}
 		methods := util.GetTagValues(tagMethodName, m.CommentLines)
