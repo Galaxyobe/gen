@@ -133,7 +133,7 @@ func (g *genGetter) GenerateType(c *generator.Context, t *types.Type, w io.Write
 	klog.V(5).Infof("Generating getter function for type %v", t)
 
 	sw := generator.NewSnippetWriter(w, c, "", "")
-	g.genSetFunc(sw, t)
+	g.genGetFunc(sw, t)
 	sw.Do("\n", nil)
 
 	return sw.Error()
@@ -159,7 +159,7 @@ func (g *genGetter) Imports(c *generator.Context) (imports []string) {
 	return importLines
 }
 
-func (g *genGetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
+func (g *genGetter) genGetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
 	var methodSet = util.NewMethodSet()
