@@ -55,12 +55,13 @@ type Structs2 struct {
 
 // +gen:setter=true
 type Structs3 struct {
-	// +setter:method=Set8Bits
+	// +setter:method=8Bits
 	// +setter=false
 	u8 uint8
 	// +setter=true
 	// +setter:method=Set8Bits
 	i8 int8
 	s  string
-	b  byte
+	// +setter:method=GetB
+	b byte
 }

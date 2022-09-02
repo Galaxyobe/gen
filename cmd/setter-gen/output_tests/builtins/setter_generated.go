@@ -345,3 +345,78 @@ func (b *Builtins) SetStringP(val *string) *Builtins {
 	b.StringP = val
 	return b
 }
+
+func (s *Slice) Seti8S(val []int8) *Slice {
+	s.i8S = val
+	return s
+}
+
+func (s *Slice) SetI8S(val []*int8) *Slice {
+	s.I8S = val
+	return s
+}
+
+func (s *Slice) SetI8pS(val *[]int8) *Slice {
+	s.I8pS = val
+	return s
+}
+
+func (s *Slice) Setu8S(val []uint8) *Slice {
+	s.u8S = val
+	return s
+}
+
+func (s *Slice) SetU8S(val []*uint8) *Slice {
+	s.U8S = val
+	return s
+}
+
+func (s *Slice) SetU8pS(val *[]uint8) *Slice {
+	s.U8pS = val
+	return s
+}
+
+func (s *Slice) SetsS(val []string) *Slice {
+	s.sS = val
+	return s
+}
+
+func (s *Slice) SetSS(val []*string) *Slice {
+	s.SS = val
+	return s
+}
+
+func (s *Slice) SetSpS(val *[]string) *Slice {
+	s.SpS = val
+	return s
+}
+
+func (s *Slice) SetbS(val []byte) *Slice {
+	s.bS = val
+	return s
+}
+
+func (s *Slice) SetBS(val []*byte) *Slice {
+	s.BS = val
+	return s
+}
+
+func (s *Slice) SetBpS(val *[]byte) *Slice {
+	s.BpS = val
+	return s
+}
+
+func (s *Slice) SetbuiltinsS(val []Builtins) *Slice {
+	s.builtinsS = val
+	return s
+}
+
+func (s *Slice) SetBuiltinsS(val []*Builtins) *Slice {
+	s.BuiltinsS = val
+	return s
+}
+
+func (s *Slice) SetBuiltinsPs(val *[]Builtins) *Slice {
+	s.BuiltinsPs = val
+	return s
+}

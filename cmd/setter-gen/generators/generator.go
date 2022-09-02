@@ -82,28 +82,6 @@ func (list GenTypes) allowedField(t *types.Type, m int) bool {
 	return false
 }
 
-type MethodSet map[string][]types.Member // key: method name value: types.Member
-
-func NewMethodSet() MethodSet {
-	return make(MethodSet)
-}
-
-func (m MethodSet) AddMethod(method string, member types.Member) {
-	list, ok := m[method]
-	if !ok {
-		m[method] = []types.Member{member}
-		return
-	}
-	list = append(list, member)
-	m[method] = list
-}
-
-func (m MethodSet) AddMethods(methods []string, member types.Member) {
-	for _, method := range methods {
-		m.AddMethod(method, member)
-	}
-}
-
 type genSetter struct {
 	generator.DefaultGen
 	build         *parser.Builder
@@ -184,14 +162,14 @@ func (g *genSetter) Imports(c *generator.Context) (imports []string) {
 func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
-	var methodSet = NewMethodSet()
+	var methodSet = util.NewMethodSet()
 	var genMethodSet = make(map[string]struct{})
 	for idx, m := range t.Members {
 		if util.IsLower(m.Name) && isExternalType {
 			continue
 		}
 		methods := util.GetTagValues(tagMethodName, m.CommentLines)
-		methodSet.AddMethods(methods, t.Members[idx])
+		methodSet.AddMethods("Set", methods, t.Members[idx])
 		if !g.types.allowedField(t, idx) {
 			continue
 		}
@@ -215,9 +193,6 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 		genMethodSet[name] = struct{}{}
 	}
 	for method, members := range methodSet {
-		if !strings.HasPrefix(method, "Set") {
-			method = "Set" + method
-		}
 		if _, ok := genMethodSet[method]; ok {
 			klog.Fatalf("exist method: %s when generate aggregate method", method)
 		}

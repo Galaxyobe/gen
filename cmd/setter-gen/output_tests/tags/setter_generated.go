@@ -240,3 +240,8 @@ func (s *Structs3) Set8Bits(in0 uint8, in1 int8) *Structs3 {
 	s.i8 = in1
 	return s
 }
+
+func (s *Structs3) SetGetB(in0 byte) *Structs3 {
+	s.b = in0
+	return s
+}
