@@ -62,6 +62,6 @@ type Structs3 struct {
 	// +setter:method=Set8Bits
 	i8 int8
 	s  string
-	// +setter:method=GetB
+	// +setter:method=SetByte
 	b byte
 }

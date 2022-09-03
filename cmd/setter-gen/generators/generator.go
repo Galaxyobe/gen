@@ -163,7 +163,8 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
 	var methodSet = util.NewMethodSet()
-	var genMethodSet = make(map[string]struct{})
+	var methodGen = util.NewMethodGenerate(util.GenName("Set", ""))
+
 	for idx, m := range t.Members {
 		if util.IsLower(m.Name) && isExternalType {
 			continue
@@ -173,11 +174,10 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 		if !g.types.allowedField(t, idx) {
 			continue
 		}
-		method := "Set" + m.Name
+		method := methodGen.GenName(m.Name)
 		if _, ok := t.Methods[method]; ok {
 			continue
 		}
-		genMethodSet[method] = struct{}{}
 		args := generator.Args{
 			"type":     t,
 			"field":    m,
@@ -189,11 +189,17 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 		sw.Do("return {{.receiver}}", args)
 		sw.Do("}\n\n", nil)
 	}
-	for name := range t.Methods {
-		genMethodSet[name] = struct{}{}
-	}
+	// add exist methods
+	methodGen.AddExistNames(func() []string {
+		var existMethods []string
+		for name := range t.Methods {
+			existMethods = append(existMethods, name)
+		}
+		return existMethods
+	}()...)
+	// gen aggregate method
 	for method, members := range methodSet {
-		if _, ok := genMethodSet[method]; ok {
+		if ok := methodGen.ExistName(method); ok {
 			klog.Fatalf("exist method: %s when generate aggregate method", method)
 		}
 		args := generator.Args{
