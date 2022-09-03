@@ -26,8 +26,7 @@ func NewGenTypes(pkg *types.Package) (pkgEnabled bool, list GenTypes) {
 		if ut.Kind != types.Struct {
 			continue
 		}
-		comments := t.SecondClosestCommentLines
-		comments = append(comments, t.CommentLines...)
+		comments := t.CommentLines
 		set, enabled := util.GetTagBoolStatus(tagPackageName, comments)
 		allowedFields := util.GetTagValues(tagSelectFieldsName, comments)
 		if len(allowedFields) > 0 {
