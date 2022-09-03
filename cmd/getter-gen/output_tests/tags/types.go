@@ -66,6 +66,6 @@ type Structs3 struct {
 	// +getter:method=8Bits
 	i8 int8
 	s  string
-	// +getter:method=GetB
+	// +getter:method=GetByte
 	b byte
 }
