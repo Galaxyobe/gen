@@ -48,3 +48,23 @@ func GetTagValues(tag string, comments []string) []string {
 	}
 	return result
 }
+
+func GetTagValuesStatus(tag string, comments []string) (bool, []string) {
+	values := types.ExtractCommentTags("+", comments)[tag]
+	if len(values) == 0 {
+		return false, nil
+	}
+	var result []string
+	for _, item := range values {
+		result = append(result, strings.Split(item, ",")...)
+	}
+	return true, result
+}
+
+func GetTagValueStatus(tag string, comments []string) (bool, string) {
+	set, values := GetTagValuesStatus(tag, comments)
+	if len(values) > 0 {
+		return set, values[0]
+	}
+	return false, ""
+}
