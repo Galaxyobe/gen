@@ -235,13 +235,13 @@ func (s *Structs3) SetB(val byte) *Structs3 {
 	return s
 }
 
-func (s *Structs3) SetByte(in0 byte) *Structs3 {
-	s.b = in0
-	return s
-}
-
 func (s *Structs3) Set8Bits(in0 uint8, in1 int8) *Structs3 {
 	s.u8 = in0
 	s.i8 = in1
+	return s
+}
+
+func (s *Structs3) SetByte(in0 byte) *Structs3 {
+	s.b = in0
 	return s
 }

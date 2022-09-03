@@ -64,6 +64,8 @@ type Builtins struct {
 	i_am     string
 }
 
+type BuiltinsOption func(*Builtins)
+
 func WithU8BuiltinsOption(val Uint8) BuiltinsOption {
 	return func(object *Builtins) {
 		object.U8 = val
