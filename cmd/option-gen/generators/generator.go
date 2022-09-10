@@ -1,3 +1,19 @@
+/*
+ Copyright 2022 Galaxyobe.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 package generators
 
 import (
@@ -10,6 +26,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/galaxyobe/gen/pkg/util"
+	tpgenerator "github.com/galaxyobe/gen/third_party/gengo/generator"
 
 	"github.com/galaxyobe/gen/third_party/gengo/parser"
 )
@@ -166,7 +183,13 @@ func (g *genOption) Init(c *generator.Context, w io.Writer) error {
 
 func (g *genOption) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	klog.V(5).Infof("Generating option function for type %v", t)
-	sw := generator.NewSnippetWriter(w, c, "", "")
+	sw := tpgenerator.NewSnippetWriter(w, c, "", "")
+	sw.AddFunc("slice", func(s string) string {
+		if strings.HasPrefix(s, "[]") {
+			return strings.ReplaceAll(s, "[]", "...")
+		}
+		return s
+	})
 	g.genOptionType(sw, t)
 	g.genWithFieldFunc(sw, t)
 	sw.Do("\n", nil)
@@ -217,7 +240,7 @@ func (g *genOption) getOptionTypeName(t *types.Type) string {
 	return name
 }
 
-func (g *genOption) genOptionType(sw *generator.SnippetWriter, t *types.Type) {
+func (g *genOption) genOptionType(sw *tpgenerator.SnippetWriter, t *types.Type) {
 	name := g.getOptionTypeName(t)
 	if g.genTypes.existMethod(name) {
 		return
@@ -229,7 +252,7 @@ func (g *genOption) genOptionType(sw *generator.SnippetWriter, t *types.Type) {
 	sw.Do("type {{.name}} func(* {{.type|public}})\n", args)
 }
 
-func (g *genOption) genWithFieldFunc(sw *generator.SnippetWriter, t *types.Type) {
+func (g *genOption) genWithFieldFunc(sw *tpgenerator.SnippetWriter, t *types.Type) {
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
 	option := g.getOptionTypeName(t)
 	suffix := g.getOptionSuffixName(t)
@@ -251,7 +274,7 @@ func (g *genOption) genWithFieldFunc(sw *generator.SnippetWriter, t *types.Type)
 			"field":  m,
 			"method": method,
 		}
-		sw.Do("func {{.method}} (val {{.field.Type|raw}}) {{.option}} {\n", args)
+		sw.Do("func {{.method}} (val {{.field.Type|raw|slice}}) {{.option}} {\n", args)
 		sw.Do("return func(object * {{.type|public}}) {\n", args)
 		sw.Do("object.{{.field.Name}} = val\n", args)
 		sw.Do("}\n", nil)

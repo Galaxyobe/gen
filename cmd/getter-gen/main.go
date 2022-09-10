@@ -1,17 +1,17 @@
 /*
-Copyright 2015 The Gen Authors.
+ Copyright 2022 Galaxyobe.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
 */
 
 // getter-gen is a tool for auto-generating set struct field functions.
@@ -29,12 +29,20 @@ limitations under the License.
 // Getter functions can be generated for individual types, rather than the
 // entire package by specifying a comment on the type or filed definition of the form:
 //
-//	// +gen:getter=true
+//	// +gen:getter=true|false
 //
-// When generating for a whole package, individual types may opt out of
-// Getter generation by specifying a comment on the type definition of the form:
+// You can not participate in the generation by setting the field a
+// comment on the type definition of the form:
 //
-//	// +gen:getter=false
+//	type Struct struct {
+//		// +getter=false
+//		Field string
+//	}
+//
+// You can also specify the field name that needs to be generated a
+// comment on the type definition of the form:
+//
+//	// +gen:getter:fields=field1,field2,field3
 package main
 
 import (
@@ -48,7 +56,8 @@ import (
 	"github.com/galaxyobe/gen/pkg/util"
 )
 
-// -v 7 -i github.com/galaxyobe/gen/cmd/getter-gen/output_tests/... --trim-path-prefix github.com/galaxyobe/gen/cmd/getter-gen -o .
+// main getter-gen at project root, program flag:
+// -v 7 -i github.com/galaxyobe/gen/cmd/getter-gen/output_tests/... --trim-path-prefix github.com/galaxyobe/gen -o .
 func main() {
 	klog.InitFlags(nil)
 	arguments := args.Default()

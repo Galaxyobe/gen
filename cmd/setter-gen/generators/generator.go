@@ -1,3 +1,19 @@
+/*
+ Copyright 2022 Galaxyobe.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 package generators
 
 import (
@@ -10,7 +26,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/galaxyobe/gen/pkg/util"
-
+	tpgenerator "github.com/galaxyobe/gen/third_party/gengo/generator"
 	"github.com/galaxyobe/gen/third_party/gengo/parser"
 )
 
@@ -131,7 +147,13 @@ func (g *genSetter) Init(c *generator.Context, w io.Writer) error {
 func (g *genSetter) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	klog.V(5).Infof("Generating setter function for type %v", t)
 
-	sw := generator.NewSnippetWriter(w, c, "", "")
+	sw := tpgenerator.NewSnippetWriter(w, c, "", "")
+	sw.AddFunc("slice", func(s string) string {
+		if strings.HasPrefix(s, "[]") {
+			return strings.ReplaceAll(s, "[]", "...")
+		}
+		return s
+	})
 	g.genSetFunc(sw, t)
 	sw.Do("\n", nil)
 
@@ -158,7 +180,7 @@ func (g *genSetter) Imports(c *generator.Context) (imports []string) {
 	return importLines
 }
 
-func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
+func (g *genSetter) genSetFunc(sw *tpgenerator.SnippetWriter, t *types.Type) {
 	receiver := strings.ToLower(t.Name.Name[:1])
 	isExternalType := g.packageTypes.IsExternalType(t.Name.Package, t.Name.Name)
 	var methodSet = util.NewMethodSet()
@@ -183,7 +205,7 @@ func (g *genSetter) genSetFunc(sw *generator.SnippetWriter, t *types.Type) {
 			"receiver": receiver,
 			"method":   method,
 		}
-		sw.Do("func ({{.receiver}} *{{.type|public}}) {{.method}}(val {{.field.Type|raw}}) *{{.type|public}} {\n", args)
+		sw.Do("func ({{.receiver}} *{{.type|public}}) {{.method}}(val {{.field.Type|raw|slice}}) *{{.type|public}} {\n", args)
 		sw.Do("{{.receiver}}.{{.field.Name}} = val\n", args)
 		sw.Do("return {{.receiver}}", args)
 		sw.Do("}\n\n", nil)
